@@ -1,5 +1,5 @@
-/results/
-/datasets/
-/extras/
-/ground_truth_dataset/
-/models/
+*.xlsx
+*.pt
+*.jpg
+*.png
+
