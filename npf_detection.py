@@ -12,7 +12,6 @@ from data_handler import SiteData
 from utils import check_folder_existence, seconds_to_hours_minutes
 import statsmodels.api as sma
 from sklearn.linear_model import TheilSenRegressor
-from ultralytics import YOLO
 lowess = sma.nonparametric.lowess
 
 
@@ -35,39 +34,65 @@ class NPFDetection:
         self.mode_dp = self.get_max_conc_mode(self.data)
 
     def plot_contour(self, date: pd.Timestamp, day_data: pd.DataFrame):
-        v_min = 0
-        v_max = np.quantile(day_data, 0.87)
+        v_min = np.quantile(day_data, 0.05)
+        v_max = np.quantile(day_data, 0.95)
         delta = datetime.timedelta(days=1)
-        plt.figure(figsize=(12, 6))
+
+        # Ensure v_min is strictly positive for log scale
+        v_min = max(v_min, 1e-3)
+
+        # Create figure with specified size ratio
+        fig, ax = plt.subplots(figsize=(5, 2.5))
+
+        # Create meshgrid and plot contour
         _X, _Y = np.meshgrid(day_data.index, day_data.columns, copy=False, indexing='xy')
         _Z = day_data.transpose().values
-        ax = plt.subplot()
-        img = plt.contourf(_X, _Y, _Z, 800, cmap="jet", extend='both', vmax=v_max, vmin=v_min)
-        plt.title(f'Contour Particle Size Distribution for {date}')
-        plt.xlabel('Time')
-        plt.ylabel('Particle Size Dp (nm)')
-        plt.xticks(rotation=45)
+
+        # Create colour map
+        img = ax.contourf(_X, _Y, _Z, 800, cmap="jet", extend='both', vmax=v_max, vmin=v_min, )
+
+        # Set axis labels and scales
+        ax.set_xlabel('')
+        ax.set_ylabel('D$_p$ (nm)')
+
+        # Configure x-axis (time)
+        plt.setp(ax.get_xticklabels(), rotation=0)
         ax.set_xlim(date, date + delta)
-        ax.set_ylim(self.ymin, self.ymax)
         ax.xaxis.set_major_formatter(mpl.dates.DateFormatter('%H:%M'))
         ax.xaxis.set_major_locator(md.HourLocator(interval=6))
+
+        # Configure y-axis (particle size)
+        ax.set_ylim(self.ymin, self.ymax)
         ax.set_yscale('log')
-        ax.set_position([0.1, 0.15, 0.8, 0.75])
-        norm = mpl.colors.Normalize(vmin=v_min, vmax=v_max)
-        sm = plt.cm.ScalarMappable(norm=norm, cmap=img.cmap)
-        cbar = plt.colorbar(sm)
-        cbar.set_label('Concentration')
-        formatter = ticker.ScalarFormatter(useMathText=True)
-        formatter.set_powerlimits((3, 3))
-        cbar.set_ticks(np.linspace(v_min, v_max, 5))
-        cbar.ax.yaxis.set_major_formatter(formatter)
-        cbar.ax.set_title('dN/dlogDp(cm$^{-3}$)')
-        plt.savefig(self.save_path + '/contour_plot/' + str(date) + '.jpg', bbox_inches="tight", dpi=300)
+        ax.yaxis.set_major_formatter(ticker.ScalarFormatter())
+
+        # Add date below plot
+        date_str = date.strftime("%d/%m/%Y")
+        plt.figtext(0.05, -0.05, date_str, ha='left')
+
+        # Adjust layout using subplots_adjust for tighter packing
+        fig.subplots_adjust(left=0.08, right=0.9, top=0.95, bottom=0.1)
+        
+        # Create colorbar with logarithmic scale
+        cbar = fig.colorbar(img, ax=ax, shrink=0.85, pad=0.02, extend="both")
+        cbar.set_label('dN/dlogD$_p$ (cm$^{-3}$)', rotation=270, labelpad=15)
+
+        # Set colorbar ticks from 10^0 to 10^8
+        cbar.set_ticks([10**i for i in range(0, 9)])  # Set ticks at 10^0 to 10^8
+        cbar.set_ticklabels([f'$10^{i}$' for i in range(0, 9)])  # Format tick labels
+
+        # Set the colorbar scale to logarithmic
+        cbar.ax.set_yscale('log')
+
+        # Save figure
+        plt.savefig(self.save_path + '/contour_plot/' + str(date) + '.jpg', bbox_inches="tight", dpi=300, pad_inches=0.02)
         if self.plot_mode:
             try:
                 self.plot_modes(ax, date)
             except Exception as e:
                 print(f"Error while plotting mode for {date}: {e}")
+
+        # Close figure
         plt.close()
 
     def plot_modes(self, ax, date: pd.Timestamp):
@@ -136,9 +161,8 @@ class NPFDetection:
             except Exception as e:
                 print(f"Error while plotting contour for {date}: {e}")
 
-    def predict(self, folder_name: str = 'contour_plot', conf: float = 0.78, iou: float = 0.45):
+    def predict(self, model, folder_name: str = 'contour_plot', conf: float = 0.78, iou: float = 0.45):
         check_folder_existence(self.save_path + '/predictions')
-        model = YOLO('models/npf_detector_v2.pt')
         self.results = model.predict(self.save_path + '/' + folder_name, project=self.save_path,
                                      name='predictions', exist_ok=True, save=True, max_det=1, conf=conf, iou=iou,
                                      show=False, stream=True, augment=False)

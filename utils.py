@@ -1,5 +1,20 @@
 import os
 
+from ultralytics import YOLO
+
+
+def load_model(model_name: str = 'npf_detector_v2.pt'):
+    print('Loading model: ' + model_name)
+    model_path = 'models/' + model_name
+    if not os.path.exists(model_path):
+        os.makedirs('models', exist_ok=True)
+        print("Model file does not exist in 'models' folder. Please run train.py to create the model.")
+        print("Or in case already trained, please put the model file in 'models' folder.")
+        exit(1)
+    model = YOLO(model_path)
+    print('Model loaded')
+    return model
+
 
 def check_folder_existence(folder_path):
     print('Checking if folder with given path exists - ' + folder_path)

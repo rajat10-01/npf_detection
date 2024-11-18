@@ -57,7 +57,14 @@ class DataReader:
         self.max_size = max_size
 
     def __iter__(self):
+        if not os.path.exists(self.folder_path):
+            print(f"Folder '{self.folder_path}' does not exist. Please create one with excel files in it.")
+            return
         files = glob.glob(os.path.join(self.folder_path, f"*{self.file_extension}"))
+        if len(files) == 0:
+            print(f"No files with extension '{self.file_extension}' in folder '{self.folder_path}'.")
+            print("Please put atleast one .xlsx file as expected.")
+            return
         for file_path in files:
             if self.should_process_file(file_path):
                 yield from self.process_file(file_path)
