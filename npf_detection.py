@@ -38,18 +38,24 @@ class NPFDetection:
         v_max = np.quantile(day_data, 0.95)
         delta = datetime.timedelta(days=1)
 
-        # Ensure v_min is strictly positive for log scale
-        v_min = max(v_min, 1e-3)
+        # # Ensure v_min is strictly positive for log scale
+        v_min = max(v_min, 1e0)
 
         # Create figure with specified size ratio
         fig, ax = plt.subplots(figsize=(5, 2.5))
 
-        # Create meshgrid and plot contour
-        _X, _Y = np.meshgrid(day_data.index, day_data.columns, copy=False, indexing='xy')
+        # Ensure all data is positive and handle zeros/negatives
         _Z = day_data.transpose().values
+        
+        # Create meshgrid
+        _X, _Y = np.meshgrid(day_data.index, day_data.columns, copy=False, indexing='xy')
 
-        # Create colour map
-        img = ax.contourf(_X, _Y, _Z, 800, cmap="jet", extend='both', vmax=v_max, vmin=v_min, )
+        # Create colour map with optimized levels
+        img = ax.contourf(_X, _Y, _Z, levels=800, 
+                          cmap="jet", 
+                          vmin=v_min, 
+                          vmax=v_max,
+                          extend='both')  # Handle out-of-range values smoothly
 
         # Set axis labels and scales
         ax.set_xlabel('')
@@ -74,12 +80,8 @@ class NPFDetection:
         fig.subplots_adjust(left=0.08, right=0.9, top=0.95, bottom=0.1)
         
         # Create colorbar with logarithmic scale
-        cbar = fig.colorbar(img, ax=ax, shrink=0.85, pad=0.02, extend="both")
+        cbar = fig.colorbar(img, ax=ax, shrink=0.85, pad=0.02, spacing='proportional')
         cbar.set_label('dN/dlogD$_p$ (cm$^{-3}$)', rotation=270, labelpad=15)
-
-        # Set colorbar ticks from 10^0 to 10^8
-        cbar.set_ticks([10**i for i in range(0, 9)])  # Set ticks at 10^0 to 10^8
-        cbar.set_ticklabels([f'$10^{i}$' for i in range(0, 9)])  # Format tick labels
 
         # Set the colorbar scale to logarithmic
         cbar.ax.set_yscale('log')
