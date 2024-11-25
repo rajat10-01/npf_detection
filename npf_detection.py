@@ -179,8 +179,10 @@ class NPFDetection:
             if boxes.shape[0] > 0:
                 box = boxes[0]
                 box = box.cpu().numpy()
+                # Get confidence score for the first detection
+                conf_score = result.boxes.conf[0].item()
                 x_min, y_min, x_max, y_max = box
-                x1, x2 = 191, 2421
+                x1, x2 = 208, 1228
                 start_time_sec = ((x_min - x1) / (x2 - x1)) * 86400
                 end_time_sec = ((x_max - x1) / (x2 - x1)) * 86400
                 start_time = seconds_to_hours_minutes(start_time_sec)
@@ -191,14 +193,17 @@ class NPFDetection:
                         print('Not an NPF event: ', date_str)
                         continue
                     sl25, sl50, sl80 = gr[0], gr[1], gr[2]
-                    event_data.append([date_str, x_min, y_min, x_max, y_max, start_time, end_time, sl25, sl50, sl80])
+                    event_data.append([date_str, x_min, y_min, x_max, y_max, start_time, end_time, 
+                                     sl25, sl50, sl80, conf_score])
                 except Exception as e:
                     print(f"Error while calculating growth rate for {date_str}: {e}")
                     continue
                 plt.close()
         event_data = pd.DataFrame(event_data, columns=['Date', 'x_min', 'y_min', 'x_max', 'y_max', 'start_time',
-                                                       'end_time', 'growth_rate_0_25', 'growth_rate_25_50',
-                                                       'growth_rate_50_80'])
+                                                      'end_time', 'growth_rate_0_25', 'growth_rate_25_50',
+                                                      'growth_rate_50_80', 'confidence'])
+        # Change Date from %Y-%m-%d to %d/%m/%Y
+        event_data['Date'] = pd.to_datetime(event_data['Date']).dt.strftime('%d/%m/%Y')
         event_data.to_excel(self.save_path + '/event_data.xlsx', index=False)
 
     def find_gr(self, date, start_time, size_range=None):
