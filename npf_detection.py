@@ -240,6 +240,8 @@ class NPFDetection:
     @staticmethod
     def get_max_conc_mode(data: pd.DataFrame):
         mode_dp = data.idxmax(axis=1, skipna=True)
+        mode_dp = pd.to_numeric(mode_dp, errors='coerce')
+        mode_dp = mode_dp.dropna()
         mode_dp = mode_dp[mode_dp < 200]
         return mode_dp
 
