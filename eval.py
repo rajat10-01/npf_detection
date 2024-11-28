@@ -4,7 +4,7 @@ from utils import load_model
 
 if __name__ == "__main__":
     model = load_model('npf_detector_v2.pt')
-    dr = DataReader(folder_path='datasets/eval', file_extension='.xlsx', min_size=3, max_size=1000)
+    dr = DataReader(folder_path='datasets', file_extension='.xlsx', min_size=3, max_size=1000)
     for site in dr:
         try:
             npf = NPFDetection(data=site, plot_mode=True)

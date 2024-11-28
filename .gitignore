@@ -1,4 +1,6 @@
-*.xlsx
-*.pt
 *.jpg
 *.png
+results/
+__pycache__/
+.idea/
+*.pyc
