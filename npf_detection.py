@@ -7,7 +7,6 @@ import matplotlib.dates as md
 import datetime
 import tqdm
 from matplotlib import ticker
-
 from data_handler import SiteData
 from utils import check_folder_existence, seconds_to_hours_minutes
 import statsmodels.api as sma
@@ -35,6 +34,7 @@ class NPFDetection:
 
     def plot_contour(self, date: pd.Timestamp, day_data: pd.DataFrame):
         v_min = np.quantile(day_data, 0.05)
+        # v_min = 0
         v_max = np.quantile(day_data, 0.95)
         delta = datetime.timedelta(days=1)
 
@@ -104,20 +104,20 @@ class NPFDetection:
             plt.savefig(self.save_path + '/contour_plot_with_mode/' + str(date) + '.jpg',
                         bbox_inches="tight", dpi=300)
             return
-        ax.scatter(modes.index, modes.values, color='blue', edgecolors='white', marker='o', s=15, alpha=0.8)
-        modes = self.outlier_remover(modes, lowess_factor=0.3, std_factor=1)
-        if modes.empty:
-            plt.savefig(self.save_path + '/contour_plot_with_mode/' + str(date) + '.jpg',
-                        bbox_inches="tight", dpi=300)
-            return
-        min_index = self.find_min_point_idx(modes)
-        if min_index is not None:
-            modes1 = modes.loc[min_index:]
-            max_index = self.find_max_point_idx(modes1)
-            if max_index is not None:
-                modes1 = modes1.loc[:max_index]
-                mav_modes = modes1.rolling(5, center=True).mean()
-                ax.plot(mav_modes.index, mav_modes.values, color='red', alpha=0.8, linewidth=2)
+        ax.scatter(modes.index, modes.values, color='black', marker='+', s=20, alpha=0.8)
+        # modes = self.outlier_remover(modes, lowess_factor=0.3, std_factor=1)
+        # if modes.empty:
+        #     plt.savefig(self.save_path + '/contour_plot_with_mode/' + str(date) + '.jpg',
+        #                 bbox_inches="tight", dpi=300)
+        #     return
+        # min_index = self.find_min_point_idx(modes)
+        # if min_index is not None:
+        #     modes1 = modes.loc[min_index:]
+        #     max_index = self.find_max_point_idx(modes1)
+        #     if max_index is not None:
+        #         modes1 = modes1.loc[:max_index]
+        #         mav_modes = modes1.rolling(5, center=True).mean()
+        #         ax.plot(mav_modes.index, mav_modes.values, color='red', alpha=0.8, linewidth=2)
 
         plt.savefig(self.save_path + '/contour_plot_with_mode/' + str(date) + '.jpg',
                     bbox_inches="tight", dpi=300)
@@ -163,7 +163,7 @@ class NPFDetection:
             except Exception as e:
                 print(f"Error while plotting contour for {date}: {e}")
 
-    def predict(self, model, folder_name: str = 'contour_plot', conf: float = 0.78, iou: float = 0.45):
+    def predict(self, model, folder_name: str = 'contour_plot', conf: float = 0.001, iou: float = 0.45):
         check_folder_existence(self.save_path + '/predictions')
         self.results = model.predict(self.save_path + '/' + folder_name, project=self.save_path,
                                      name='predictions', exist_ok=True, save=True, max_det=1, conf=conf, iou=iou,
