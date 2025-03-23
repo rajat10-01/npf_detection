@@ -26,11 +26,6 @@ venv/bin/activate
 pip install -r requirements.txt
 ```
 
-4. Download the pre-trained model:
-- Visit: https://drive.google.com/drive/folders/1nMZMuqnC2mWLId2DiSAasJM5RCXzB1cU
-- Download `npf_detector_v2.pt`
-- Place it in the `models` folder (create if it doesn't exist)
-
 ## Usage
 
 1. Place your .xlsx data files in the `datasets` folder
