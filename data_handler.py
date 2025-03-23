@@ -14,14 +14,28 @@ class SiteData:
         data.rename(columns={data.columns[0]: 'DateTime'}, inplace=True)
         data['DateTime'] = pd.to_datetime(data['DateTime'], format='%d/%m/%Y %H:%M:%S')
         data.set_index('DateTime', inplace=True)
+        
+        # Optimize memory usage by converting to appropriate dtypes
+        numeric_columns = data.select_dtypes(include=['float64']).columns
+        data[numeric_columns] = data[numeric_columns].astype('float32')
+        
+        # Drop unnecessary data
         data.dropna(axis=1, how='all', inplace=True)
         data.dropna(axis=0, inplace=True)
+        
+        # Remove mode column if exists
         last_col = data.columns[-1]
         if isinstance(last_col, str) and 'mode' in last_col.lower():
             data.pop(last_col)
+            
+        # Filter columns by size range
         column_names = data.columns
         size_columns = [col for col in column_names if self.is_within_size_range(col, min_size, max_size)]
         data = data[size_columns]
+        
+        # Sort columns numerically for consistent processing
+        data = data.reindex(columns=sorted(data.columns, key=float))
+        
         return data
 
     @staticmethod
@@ -46,7 +60,8 @@ class SiteData:
 
     @property
     def site_data(self) -> pd.DataFrame:
-        return self.__site_data
+        # Return a copy to ensure thread safety
+        return self.__site_data.copy()
 
 
 class DataReader:

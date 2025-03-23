@@ -14,6 +14,70 @@ from sklearn.linear_model import TheilSenRegressor
 lowess = sma.nonparametric.lowess
 
 
+def _plot_single_date(args):
+    date, data, save_path, plot_mode, ymin, ymax, mode_dp = args
+    try:
+        # Create figure with specified size ratio
+        fig, ax = plt.subplots(figsize=(5, 2.5))
+        
+        v_min = np.quantile(data, 0.05)
+        v_min = max(v_min, 1e0)
+        v_max = np.quantile(data, 0.95)
+        delta = datetime.timedelta(days=1)
+        
+        _Z = data.transpose().values
+        _X, _Y = np.meshgrid(data.index, data.columns, copy=False, indexing='xy')
+        
+        img = ax.contourf(_X, _Y, _Z, levels=800, 
+                        cmap="jet", 
+                        vmin=v_min, 
+                        vmax=v_max,
+                        extend='both')
+        
+        ax.set_xlabel('')
+        ax.set_ylabel('D$_p$ (nm)')
+        
+        plt.setp(ax.get_xticklabels(), rotation=0)
+        ax.set_xlim(date, date + delta)
+        ax.xaxis.set_major_formatter(mpl.dates.DateFormatter('%H:%M'))
+        ax.xaxis.set_major_locator(md.HourLocator(interval=6))
+        
+        ax.set_ylim(ymin, ymax)
+        ax.set_yscale('log')
+        ax.yaxis.set_major_formatter(ticker.ScalarFormatter())
+        
+        date_str = date.strftime("%d/%m/%Y")
+        plt.figtext(0.05, -0.05, date_str, ha='left')
+        
+        fig.subplots_adjust(left=0.08, right=0.9, top=0.95, bottom=0.1)
+        
+        cbar = fig.colorbar(img, ax=ax, shrink=0.85, pad=0.02, spacing='proportional')
+        cbar.set_label('dN/dlogD$_p$ (cm$^{-3}$)', rotation=270, labelpad=15)
+        cbar.ax.set_yscale('log')
+        
+        # Save the basic contour plot
+        plt.savefig(save_path + '/contour_plot/' + str(date) + '.jpg', 
+                   bbox_inches="tight", dpi=300, pad_inches=0.02)
+        
+        # Add mode plotting if enabled
+        if plot_mode:
+            try:
+                date_str = date.strftime("%Y-%m-%d")
+                modes = mode_dp.loc[date_str]
+                if not modes.empty:
+                    ax.scatter(modes.index, modes.values, color='black', marker='+', s=20, alpha=0.8)
+                plt.savefig(save_path + '/contour_plot_with_mode/' + str(date) + '.jpg',
+                           bbox_inches="tight", dpi=300)
+            except Exception as e:
+                print(f"Error while plotting mode for {date}: {e}")
+        
+        plt.close()
+        return date, True, None
+    except Exception as e:
+        plt.close()
+        return date, False, str(e)
+
+
 class NPFDetection:
     def __init__(self, data: SiteData, plot_mode: bool = False):
         self.results = None
@@ -22,8 +86,6 @@ class NPFDetection:
         self.save_path = check_folder_existence('results/' + self.site_name)
         self.plot_mode = plot_mode
         self.mode_dp = pd.Series(dtype=float)
-        # self.ymin = float(self.data.columns[0])                #Doubt
-        # self.ymax = min(float(self.data.columns[-1]), 500)              #Doubt
         self.ymin = data.min_size
         self.ymax = data.max_size
         self.preprocess_data()
@@ -157,11 +219,50 @@ class NPFDetection:
         check_folder_existence(self.save_path + '/contour_plot')
         if self.plot_mode:
             check_folder_existence(self.save_path + '/contour_plot_with_mode')
-        for date, day_data in tqdm.tqdm(self.grouped_data):
-            try:
-                self.plot_contour(date, day_data)
-            except Exception as e:
-                print(f"Error while plotting contour for {date}: {e}")
+        
+        from multiprocessing import Pool
+        import multiprocessing
+        
+        # Prepare data for parallel processing
+        plot_args = [
+            (date, day_data, self.save_path, self.plot_mode, self.ymin, self.ymax, self.mode_dp)
+            for date, day_data in self.grouped_data
+        ]
+        
+        # Use number of CPU cores minus 1 to avoid system overload
+        n_workers = max(1, multiprocessing.cpu_count() - 1)
+        print(f"Starting parallel contour plot generation using {n_workers} workers...")
+        
+        processed_dates = set()
+        failed_dates = set()
+        
+        try:
+            with Pool(processes=n_workers) as pool:
+                for date, success, error in tqdm.tqdm(
+                    pool.imap_unordered(_plot_single_date, plot_args),
+                    total=len(plot_args)
+                ):
+                    if success:
+                        processed_dates.add(date)
+                    else:
+                        failed_dates.add(date)
+                        print(f"Error while plotting contour for {date}: {error}")
+        except Exception as e:
+            print(f"Error while processing site {self.site_name} data: {str(e)}")
+            # Fallback to sequential processing if parallel processing fails
+            print("\nFalling back to sequential processing...")
+            for args in tqdm.tqdm(plot_args):
+                date, success, error = _plot_single_date(args)
+                if success:
+                    processed_dates.add(date)
+                else:
+                    failed_dates.add(date)
+                    print(f"Error while plotting contour for {date}: {error}")
+        
+        if failed_dates:
+            print(f"\nFailed to process {len(failed_dates)} dates:")
+            for date in sorted(failed_dates):
+                print(f"- {date}")
 
     def predict(self, model, folder_name: str = 'contour_plot', conf: float = 0.001, iou: float = 0.45):
         check_folder_existence(self.save_path + '/predictions')
@@ -173,6 +274,7 @@ class NPFDetection:
         event_data = []
         check_folder_existence(self.save_path + '/NPF_modes')
         for result in self.results:
+            result.names[0] = 'CoS ='
             path = os.path.relpath(result.path, self.save_path + '/contour_plot')
             date_str = os.path.splitext(path)[0]
             boxes = result.boxes.xyxy
@@ -189,15 +291,15 @@ class NPFDetection:
                 end_time = seconds_to_hours_minutes(end_time_sec)
                 try:
                     gr, start_time = self.find_gr(date_str, start_time)
-                    if gr[0] is None and gr[1] is None and gr[2] is None:
-                        print('Not an NPF event: ', date_str)
-                        continue
+                    # if gr[0] is None and gr[1] is None and gr[2] is None:
+                    #     print('Not an NPF event: ', date_str)
+                    #     continue
                     sl25, sl50, sl80 = gr[0], gr[1], gr[2]
-                    event_data.append([date_str, x_min, y_min, x_max, y_max, start_time, end_time, 
-                                     sl25, sl50, sl80, conf_score])
                 except Exception as e:
                     print(f"Error while calculating growth rate for {date_str}: {e}")
-                    continue
+                    sl25, sl50, sl80 = None, None, None
+                event_data.append([date_str, x_min, y_min, x_max, y_max, start_time, end_time, 
+                                     sl25, sl50, sl80, conf_score])
                 plt.close()
         event_data = pd.DataFrame(event_data, columns=['Date', 'x_min', 'y_min', 'x_max', 'y_max', 'start_time',
                                                       'end_time', 'growth_rate_0_25', 'growth_rate_25_50',
