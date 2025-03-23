@@ -11,7 +11,7 @@ This repository contains the implementation for New Particle Formation (NPF) eve
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/npf_detection.git
+git clone https://github.com/rajat10-01/npf_detection.git
 cd npf_detection
 ```
 
