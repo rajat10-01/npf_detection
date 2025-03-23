@@ -1,6 +1,6 @@
 # NPF Detection
 
-This repository contains the implementation for New Particle Formation (NPF) events detection using Computer Vision techniques.
+This repository contains a fast deep learning algorithm, You Only Look Once (YOLO) for detecting new particle formation (NPF) events.
 
 ## Prerequisites
 
@@ -30,6 +30,7 @@ pip install -r requirements.txt
 
 1. Place your .xlsx data files in the `datasets` folder
    - A sample dataset is provided for testing
+   - Please make sure your data file is in the same format as sample data, including sheet and variable names
 
 2. Run the evaluation script:
 ```bash
