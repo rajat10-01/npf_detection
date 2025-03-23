@@ -18,7 +18,7 @@ cd npf_detection
 2. Create and activate a Python virtual environment:
 ```bash
 python -m venv venv
-source venv/bin/activate  # On Windows, use: venv\Scripts\activate
+venv/bin/activate
 ```
 
 3. Install dependencies:
