@@ -53,4 +53,4 @@ The script will generate:
 
 For any queries, please contact:
 - Email: rajat.b@alumni.iitm.ac.com
-- CC: vijaykanawade@yahoo.co.in, chandansarangi@civil.iitm.ac.in
+- CC: vijaykanawade03@yahoo.co.in, chandansarangi@civil.iitm.ac.in
