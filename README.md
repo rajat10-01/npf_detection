@@ -49,6 +49,32 @@ The script will generate:
 - NPF event detection results
 - Growth rate calculations
 
+## Output Files
+
+After running the evaluation script, the following output files will be generated for each site in the `results` folder:
+
+### Contour Plots
+- Daily contour plots showing particle size distribution over time
+- Located in the `contour_plot` subfolder
+- If mode plotting is enabled, additional plots with mode lines will be in `contour_plot_with_mode`
+
+### NPF Event Detection
+- Detection results from the YOLO model are saved in the `predictions` subfolder
+- Visualizations of detected NPF events with bounding boxes
+
+### Growth Rate Analysis
+- Mode plots for NPF events are saved in the `NPF_modes` subfolder
+- An Excel file named `event_data.xlsx` is generated in each site's folder with the following information:
+  - **Date**: Date of the NPF event (format: DD/MM/YYYY)
+  - **start_time**: Start time of the NPF event
+  - **growth_rate_0_25**: Growth rate for particles <25nm (nm/hour)
+  - **growth_rate_25_50**: Growth rate for particles 25-50nm (nm/hour)
+  - **growth_rate_50_80**: Growth rate for particles 50-80nm (nm/hour)
+  - **confidence**: Confidence score of the detection
+
+Note: Empty cells in the growth rate columns indicate negative growth rates.
+
+
 ## Correspondance
 
 For any queries, please contact:
