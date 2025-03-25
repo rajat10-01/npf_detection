@@ -264,7 +264,7 @@ class NPFDetection:
             for date in sorted(failed_dates):
                 print(f"- {date}")
 
-    def predict(self, model, folder_name: str = 'contour_plot', conf: float = 0.001, iou: float = 0.45):
+    def predict(self, model, folder_name: str = 'contour_plot', conf: float = 0.1, iou: float = 0.45):
         check_folder_existence(self.save_path + '/predictions')
         self.results = model.predict(self.save_path + '/' + folder_name, project=self.save_path,
                                      name='predictions', exist_ok=True, save=True, max_det=1, conf=conf, iou=iou,
@@ -286,9 +286,7 @@ class NPFDetection:
                 x_min, y_min, x_max, y_max = box
                 x1, x2 = 208, 1228
                 start_time_sec = ((x_min - x1) / (x2 - x1)) * 86400
-                end_time_sec = ((x_max - x1) / (x2 - x1)) * 86400
                 start_time = seconds_to_hours_minutes(start_time_sec)
-                end_time = seconds_to_hours_minutes(end_time_sec)
                 try:
                     gr, start_time = self.find_gr(date_str, start_time)
                     # if gr[0] is None and gr[1] is None and gr[2] is None:
@@ -298,12 +296,10 @@ class NPFDetection:
                 except Exception as e:
                     print(f"Error while calculating growth rate for {date_str}: {e}")
                     sl25, sl50, sl80 = None, None, None
-                event_data.append([date_str, x_min, y_min, x_max, y_max, start_time, end_time, 
-                                     sl25, sl50, sl80, conf_score])
+                event_data.append([date_str, start_time, sl25, sl50, sl80, conf_score])
                 plt.close()
-        event_data = pd.DataFrame(event_data, columns=['Date', 'x_min', 'y_min', 'x_max', 'y_max', 'start_time',
-                                                      'end_time', 'growth_rate_0_25', 'growth_rate_25_50',
-                                                      'growth_rate_50_80', 'confidence'])
+        event_data = pd.DataFrame(event_data, columns=['Date', 'start_time', 'growth_rate_0_25', 
+                                                      'growth_rate_25_50', 'growth_rate_50_80', 'confidence'])
         # Change Date from %Y-%m-%d to %d/%m/%Y
         event_data['Date'] = pd.to_datetime(event_data['Date']).dt.strftime('%d/%m/%Y')
         event_data.to_excel(self.save_path + '/event_data.xlsx', index=False)
