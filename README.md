@@ -48,3 +48,9 @@ The script will generate:
 - Contour plots for each day
 - NPF event detection results
 - Growth rate calculations
+
+## Correspondance
+
+For any queries, please contact:
+- Email: rajat.b@alumni.iitm.ac.com
+- CC: vijaykanawade@yahoo.co.in, chandansarangi@civil.iitm.ac.in
