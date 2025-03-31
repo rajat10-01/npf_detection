@@ -78,5 +78,5 @@ Note: Empty cells in the growth rate columns indicate negative growth rates.
 ## Correspondance
 
 For any queries, please contact:
-- Email: rajat.b@alumni.iitm.ac.com
+- Email: rajat.b@alumni.iitm.ac.in
 - CC: vijaykanawade03@yahoo.co.in, chandansarangi@civil.iitm.ac.in
