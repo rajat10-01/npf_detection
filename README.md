@@ -42,6 +42,52 @@ python eval.py
    - Enter site name (e.g., "delhi") when prompted
    - Results will be generated in the `results` folder
 
+## Training the Model
+
+### Dataset Structure
+The training dataset should be organized in the following structure:
+```
+training_dataset/
+├── images/
+│   ├── train/
+│   │   └── [training images]
+│   └── val/
+│       └── [validation images]
+├── labels/
+│   ├── train/
+│   │   └── [training labels]
+│   └── val/
+│       └── [validation labels]
+└── data.yaml
+```
+
+The `data.yaml` file should contain:
+```yaml
+names:
+- npf
+nc: 1
+path: [path to training_dataset folder]
+train: images/train
+val: images/val
+```
+
+### Training Process
+1. Prepare your dataset following the structure above
+2. Run the training script:
+```bash
+python train.py --model yolov8m.pt --data ./training_dataset/data.yaml --epochs 100 --batch-size 2
+```
+
+Optional arguments:
+- `--model`: Path to the model (default: yolov8m.pt)
+- `--data`: Path to the data yaml file (default: ./training_dataset/data.yaml)
+- `--epochs`: Number of training epochs (default: 100)
+- `--batch-size`: Batch size for training (default: 2)
+- `--validate`: Run validation after training
+- `--val-model`: Path to model for validation (defaults to best training weights)
+
+The training results including newly trained model will be saved in the `training_result` folder.
+
 ## Results
 
 The script will generate:

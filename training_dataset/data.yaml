@@ -1,0 +1,6 @@
+names:
+- npf
+nc: 1
+path: D:/DDP/npf_detection/training_dataset   # path to the training dataset
+train: images/train
+val: images/val
